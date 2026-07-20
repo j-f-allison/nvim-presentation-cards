@@ -110,6 +110,20 @@
   let curSize = 34;
   let lastRaw = null;
 
+  function escapeHtml(str){
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Minimal inline emphasis: **bold** then *italic*/_italic_ (order matters
+  // so ** isn't left half-consumed by the single-* pass).
+  function renderInline(text){
+    let html = escapeHtml(text);
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+    return html;
+  }
+
   function render(){
     document.documentElement.style.setProperty('--cur-size', curSize+'px');
 
@@ -126,11 +140,11 @@
     const prev = nodes[idx-1];
     const next = nodes[idx+1];
 
-    document.getElementById('prevLine').textContent = prev ? prev.text : '';
-    document.getElementById('nextLine').textContent = next ? next.text : '';
+    document.getElementById('prevLine').innerHTML = prev ? renderInline(prev.text) : '';
+    document.getElementById('nextLine').innerHTML = next ? renderInline(next.text) : '';
 
     const curLineEl = document.getElementById('curLine');
-    curLineEl.textContent = cur.text;
+    curLineEl.innerHTML = renderInline(cur.text);
     curLineEl.classList.toggle('is-section', cur.type === 'section');
 
     document.getElementById('sectionLabel').textContent = cur.section ? ('§ ' + cur.section) : '';
