@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Presenter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171A;
+    --surface:#1B1F23;
+    --text:#EDE6D6;
+    --muted:#5C636B;
+    --muted2:#2E3338;
+    --accent:#B58A4A;
+    --ribbon:#7A2E2E;
+    --serif:'Spectral', Georgia, serif;
+    --mono:'IBM Plex Mono', monospace;
+    --cur-size:34px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--serif);overflow:hidden;}
+  #app{display:flex;height:100vh;}
+
+  /* spine / progress ribbon */
+  .spine{width:26px;flex-shrink:0;position:relative;border-right:1px solid var(--muted2);}
+  .tick{position:absolute;left:2px;width:22px;height:2px;background:var(--accent);opacity:.55;}
+  .ribbon-marker{position:absolute;left:4px;width:18px;height:26px;background:var(--ribbon);
+    clip-path:polygon(0 0,100% 0,100% 78%,50% 100%,0 78%);transition:top .25s ease;}
+
+  .stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:32px;}
+  .panel{width:100%;max-width:720px;}
+
+  /* edit panel */
+  .eyebrow{font-family:var(--mono);color:var(--accent);letter-spacing:.08em;font-size:12px;text-transform:uppercase;}
+  textarea{width:100%;height:280px;margin-top:12px;background:var(--surface);color:var(--text);
+    border:1px solid var(--muted2);border-radius:4px;padding:16px;font-family:var(--mono);
+    font-size:14px;line-height:1.6;resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--accent);}
+  .hint{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .hint code{color:var(--accent);}
+  .btn-primary{margin-top:18px;background:var(--accent);color:#14171A;border:none;padding:10px 22px;
+    font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;
+    cursor:pointer;border-radius:2px;}
+  .btn-primary:hover{filter:brightness(1.1);}
+
+  /* present panel */
+  .present-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:26px;
+    font-family:var(--mono);}
+  .section-label{color:var(--accent);text-transform:uppercase;letter-spacing:.08em;font-size:13px;min-height:1em;}
+  .counter{color:var(--muted);font-size:12px;}
+
+  .scroller{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-height:220px;justify-content:center;}
+  .line{width:100%;}
+  .line.prev,.line.next{color:var(--muted);font-size:16px;line-height:1.4;opacity:.55;min-height:1.4em;}
+  .line.current{color:var(--text);font-size:var(--cur-size);line-height:1.35;font-weight:400;}
+  .line.current.is-section{color:var(--accent);font-weight:600;text-transform:uppercase;
+    letter-spacing:.03em;font-size:calc(var(--cur-size) * 0.65);}
+
+  .present-bottom{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:30px;}
+  .footer-hint{font-family:var(--mono);font-size:11px;color:var(--muted2);}
+  .chev{background:none;border:1px solid var(--muted2);color:var(--muted);width:28px;height:28px;
+    border-radius:50%;cursor:pointer;font-size:14px;}
+  .chev:hover{border-color:var(--accent);color:var(--accent);}
+
+  .top-controls{position:absolute;top:20px;right:24px;display:flex;gap:6px;font-family:var(--mono);}
+  .top-controls button{background:none;border:1px solid var(--muted2);color:var(--muted);
+    width:26px;height:26px;font-family:var(--mono);font-size:11px;cursor:pointer;border-radius:2px;}
+  .top-controls button:hover{border-color:var(--accent);color:var(--accent);}
+  .top-controls .restart{width:auto;padding:0 8px;}
+
+  [hidden]{display:none !important;}
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="spine" id="spine"></div>
+    <div class="stage" id="stage">
+
+      <div class="panel" id="editPanel">
+        <span class="eyebrow">§ Outline</span>
+        <textarea id="outlineInput" spellcheck="false"># Introduction
+- State the issue in one sentence
+- Preview your two-part roadmap
+
+# Point One
+- Rule statement
+- Key case supporting the rule
+- Apply the rule to these facts
+
+# Point Two
+- Rule statement
+- Anticipated counterargument
+- Your response
+
+# Conclusion
+- Restate your position
+- State what you're asking for</textarea>
+        <p class="hint">One point per line. Start a line with <code>#</code> for a new section heading —
+        everything else becomes a talking point. Replace this sample with your own outline, then begin.</p>
+        <button class="btn-primary" id="startBtn">Begin Presenting</button>
+      </div>
+
+      <div class="panel present-panel" id="presentPanel" hidden style="position:relative;">
+        <div class="top-controls">
+          <button class="restart" id="restartBtn" title="Back to start">↺ Restart</button>
+          <button id="sizeDown" title="Smaller text">A−</button>
+          <button id="sizeUp" title="Larger text">A+</button>
+        </div>
+        <div class="present-top">
+          <span class="section-label" id="sectionLabel"></span>
+          <span class="counter" id="counter"></span>
+        </div>
+        <div class="scroller">
+          <div class="line prev" id="prevLine"></div>
+          <div class="line current" id="curLine"></div>
+          <div class="line next" id="nextLine"></div>
+        </div>
+        <div class="present-bottom">
+          <button class="chev" id="prevBtn">&#8593;</button>
+          <span class="footer-hint">Space / &#8595; next &nbsp;·&nbsp; &#8593; previous &nbsp;·&nbsp; Esc edit</span>
+          <button class="chev" id="nextBtn">&#8595;</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  const outlineInput = document.getElementById('outlineInput');
+  const editPanel = document.getElementById('editPanel');
+  const presentPanel = document.getElementById('presentPanel');
+  const spine = document.getElementById('spine');
+
+  let nodes = [];
+  let idx = 0;
+  let curSize = 34;
+
+  function parseOutline(raw){
+    const lines = raw.split('\n');
+    const out = [];
+    let section = null;
+    for(const rawLine of lines){
+      const line = rawLine.trim();
+      if(!line) continue;
+      if(line.startsWith('#')){
+        section = line.replace(/^#+\s*/,'');
+        out.push({type:'section', text: section});
+      } else {
+        const text = line.replace(/^[-*]\s*/,'');
+        out.push({type:'bullet', text, section});
+      }
+    }
+    return out;
+  }
+
+  function render(){
+    document.documentElement.style.setProperty('--cur-size', curSize+'px');
+    const cur = nodes[idx];
+    const prev = nodes[idx-1];
+    const next = nodes[idx+1];
+
+    document.getElementById('prevLine').textContent = prev ? prev.text : '';
+    document.getElementById('nextLine').textContent = next ? next.text : '';
+
+    const curLineEl = document.getElementById('curLine');
+    curLineEl.textContent = cur.text;
+    curLineEl.classList.toggle('is-section', cur.type === 'section');
+
+    document.getElementById('sectionLabel').textContent = cur.section ? ('§ ' + cur.section) : '';
+    document.getElementById('counter').textContent = (idx+1) + ' / ' + nodes.length;
+
+    updateSpine();
+  }
+
+  function updateSpine(){
+    spine.querySelectorAll('.tick,.ribbon-marker').forEach(el => el.remove());
+    const h = spine.clientHeight;
+    const denom = (nodes.length - 1) || 1;
+    nodes.forEach((n,i) => {
+      if(n.type === 'section'){
+        const t = document.createElement('div');
+        t.className = 'tick';
+        t.style.top = (i/denom)*h + 'px';
+        spine.appendChild(t);
+      }
+    });
+    const marker = document.createElement('div');
+    marker.className = 'ribbon-marker';
+    marker.style.top = (idx/denom)*(h-26) + 'px';
+    spine.appendChild(marker);
+  }
+
+  function next(){ if(idx < nodes.length-1){ idx++; render(); } }
+  function prev(){ if(idx > 0){ idx--; render(); } }
+
+  document.getElementById('startBtn').addEventListener('click', () => {
+    const parsed = parseOutline(outlineInput.value);
+    if(parsed.length === 0) return;
+    nodes = parsed;
+    idx = 0;
+    editPanel.hidden = true;
+    presentPanel.hidden = false;
+    render();
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => { idx = 0; render(); });
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+  document.getElementById('sizeUp').addEventListener('click', () => { curSize = Math.min(56, curSize+4); render(); });
+  document.getElementById('sizeDown').addEventListener('click', () => { curSize = Math.max(22, curSize-4); render(); });
+
+  window.addEventListener('keydown', (e) => {
+    if(presentPanel.hidden) return;
+    if(e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowRight'){ e.preventDefault(); next(); }
+    else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'Backspace'){ e.preventDefault(); prev(); }
+    else if(e.key === 'Escape'){ presentPanel.hidden = true; editPanel.hidden = false; }
+  });
+
+  window.addEventListener('resize', () => { if(!presentPanel.hidden) updateSpine(); });
+</script>
+</body>
+</html>
