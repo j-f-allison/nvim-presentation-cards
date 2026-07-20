@@ -41,6 +41,8 @@
     font-family:var(--mono);}
   .section-label{color:var(--accent);text-transform:uppercase;letter-spacing:.08em;font-size:13px;min-height:1em;}
   .counter{color:var(--muted);font-size:12px;}
+  .timer{color:var(--muted);font-size:12px;letter-spacing:.04em;}
+  .timer.is-paused{color:var(--accent);}
 
   .scroller{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-height:220px;justify-content:center;}
   .line{width:100%;}
@@ -77,12 +79,15 @@
 
       <div class="panel present-panel" id="presentPanel" hidden style="position:relative;">
         <div class="top-controls">
+          <button id="timerPauseBtn" title="Pause timer">⏸</button>
+          <button id="timerResetBtn" title="Reset timer">⟲</button>
           <button class="restart" id="restartBtn" title="Back to start">↺ Restart</button>
           <button id="sizeDown" title="Smaller text">A−</button>
           <button id="sizeUp" title="Larger text">A+</button>
         </div>
         <div class="present-top">
           <span class="section-label" id="sectionLabel"></span>
+          <span class="timer" id="timerDisplay">00:00</span>
           <span class="counter" id="counter"></span>
         </div>
         <div class="scroller">
@@ -172,8 +177,67 @@
     spine.appendChild(marker);
   }
 
-  function next(){ if(idx < nodes.length-1){ idx++; render(); } }
-  function prev(){ if(idx > 0){ idx--; render(); } }
+  function next(){ if(idx < nodes.length-1){ idx++; onTransition(); render(); } }
+  function prev(){ if(idx > 0){ idx--; onTransition(); render(); } }
+
+  // --- timer ---------------------------------------------------------
+  // Auto-starts on the first slide transition (so setup/dead-air before
+  // you actually begin talking isn't counted). Pause/reset are manual.
+
+  let timerSeconds = 0;
+  let timerRunning = false;
+  let timerStarted = false;
+  let timerHandle = null;
+
+  function formatTime(total){
+    const m = Math.floor(total/60);
+    const s = total%60;
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+
+  function renderTimer(){
+    const el = document.getElementById('timerDisplay');
+    el.textContent = formatTime(timerSeconds);
+    el.classList.toggle('is-paused', timerStarted && !timerRunning);
+    const btn = document.getElementById('timerPauseBtn');
+    btn.textContent = timerRunning ? '⏸' : '▶';
+    btn.title = timerRunning ? 'Pause timer' : 'Resume timer';
+  }
+
+  function startTimer(){
+    if(timerRunning) return;
+    timerRunning = true;
+    timerHandle = setInterval(() => { timerSeconds++; renderTimer(); }, 1000);
+    renderTimer();
+  }
+
+  function pauseTimer(){
+    if(!timerRunning) return;
+    timerRunning = false;
+    clearInterval(timerHandle);
+    timerHandle = null;
+    renderTimer();
+  }
+
+  function resetTimer(){
+    pauseTimer();
+    timerSeconds = 0;
+    timerStarted = false;
+    renderTimer();
+  }
+
+  function onTransition(){
+    if(!timerStarted){
+      timerStarted = true;
+      startTimer();
+    }
+  }
+
+  document.getElementById('timerPauseBtn').addEventListener('click', () => {
+    if(timerRunning){ pauseTimer(); }
+    else { timerStarted = true; startTimer(); }
+  });
+  document.getElementById('timerResetBtn').addEventListener('click', resetTimer);
 
   document.getElementById('restartBtn').addEventListener('click', () => { idx = 0; render(); });
   document.getElementById('nextBtn').addEventListener('click', next);
