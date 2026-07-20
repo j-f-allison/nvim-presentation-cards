@@ -1,1 +1,32 @@
-.claude/settings.local.json
+# Claude Code
+.claude/
+CLAUDE.md
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.DocumentRevisions-V100
+.TemporaryItems
+.apdisk
+
+# Editors / editor swap files
+*.swp
+*.swo
+*~
+.netrwhist
+tags
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local runtime artifacts (outline.json lives in stdpath('data'), not here,
+# but ignore any that end up alongside the server in local testing)
+server/outline.json
