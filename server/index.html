@@ -48,8 +48,10 @@
   .line{width:100%;}
   .line.prev,.line.next{color:var(--muted);font-size:16px;line-height:1.4;opacity:.55;min-height:1.4em;}
   .line.current{color:var(--text);font-size:var(--cur-size);line-height:1.35;font-weight:400;}
-  .line.current.is-section{color:var(--accent);font-weight:600;text-transform:uppercase;
-    letter-spacing:.03em;font-size:calc(var(--cur-size) * 0.65);}
+  .line.next .next-section-label{
+    display:block;font-family:var(--mono);color:var(--accent);
+    text-transform:uppercase;letter-spacing:.06em;font-size:11px;margin-bottom:4px;
+  }
 
   .present-bottom{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:30px;}
   .footer-hint{font-family:var(--mono);font-size:11px;color:var(--muted2);}
@@ -146,11 +148,18 @@
     const next = nodes[idx+1];
 
     document.getElementById('prevLine').innerHTML = prev ? renderInline(prev.text) : '';
-    document.getElementById('nextLine').innerHTML = next ? renderInline(next.text) : '';
+
+    const nextLineEl = document.getElementById('nextLine');
+    if(next && next.section !== cur.section){
+      nextLineEl.innerHTML =
+        '<div class="next-section-label">&sect; ' + escapeHtml(next.section || '') + '</div>' +
+        '<div class="next-text">' + renderInline(next.text) + '</div>';
+    } else {
+      nextLineEl.innerHTML = next ? renderInline(next.text) : '';
+    }
 
     const curLineEl = document.getElementById('curLine');
     curLineEl.innerHTML = renderInline(cur.text);
-    curLineEl.classList.toggle('is-section', cur.type === 'section');
 
     document.getElementById('sectionLabel').textContent = cur.section ? ('§ ' + cur.section) : '';
     document.getElementById('counter').textContent = (idx+1) + ' / ' + nodes.length;
@@ -164,7 +173,7 @@
     const h = spine.clientHeight;
     const denom = (nodes.length - 1) || 1;
     nodes.forEach((n,i) => {
-      if(n.type === 'section'){
+      if(i === 0 || nodes[i-1].section !== n.section){
         const t = document.createElement('div');
         t.className = 'tick';
         t.style.top = (i/denom)*h + 'px';

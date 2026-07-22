@@ -1,7 +1,8 @@
 -- Parses a buffer's lines into the same outline structure the browser
--- page understands: a flat list of {type, text, section} nodes.
--- Lines starting with `#` open a new section; every other non-blank
--- line is a talking point belonging to the current section.
+-- page understands: a flat list of {text, section} nodes, one per
+-- talking point. Lines starting with `#` don't produce a node of their
+-- own -- they just set the section name attached to the bullets that
+-- follow, until the next header.
 
 local M = {}
 
@@ -19,10 +20,9 @@ function M.parse_lines(lines)
     if line ~= '' then
       if vim.startswith(line, '#') then
         section = line:gsub('^#+%s*', '')
-        table.insert(nodes, { type = 'section', text = section })
       else
         local text = strip_bullet_prefix(line)
-        table.insert(nodes, { type = 'bullet', text = text, section = section })
+        table.insert(nodes, { text = text, section = section })
       end
     end
   end
