@@ -15,14 +15,14 @@ function M.parse_lines(lines)
   local nodes = {}
   local section = nil
 
-  for _, raw_line in ipairs(lines) do
+  for lnum, raw_line in ipairs(lines) do
     local line = vim.trim(raw_line)
     if line ~= '' then
       if vim.startswith(line, '#') then
         section = line:gsub('^#+%s*', '')
       else
         local text = strip_bullet_prefix(line)
-        table.insert(nodes, { text = text, section = section })
+        table.insert(nodes, { text = text, section = section, line = lnum })
       end
     end
   end

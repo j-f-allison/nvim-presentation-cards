@@ -41,6 +41,7 @@
     font-family:var(--mono);}
   .section-label{color:var(--accent);text-transform:uppercase;letter-spacing:.08em;font-size:13px;min-height:1em;}
   .counter{color:var(--muted);font-size:12px;}
+  .line-number{color:var(--muted);font-size:12px;}
   .timer{color:var(--muted);font-size:12px;letter-spacing:.04em;}
   .timer.is-paused{color:var(--accent);}
 
@@ -90,6 +91,7 @@
         <div class="present-top">
           <span class="section-label" id="sectionLabel"></span>
           <span class="timer" id="timerDisplay">00:00</span>
+          <span class="line-number" id="lineNumber"></span>
           <span class="counter" id="counter"></span>
         </div>
         <div class="scroller">
@@ -162,6 +164,7 @@
     curLineEl.innerHTML = renderInline(cur.text);
 
     document.getElementById('sectionLabel').textContent = cur.section ? ('§ ' + cur.section) : '';
+    document.getElementById('lineNumber').textContent = cur.line ? ('Ln ' + cur.line) : '';
     document.getElementById('counter').textContent = (idx+1) + ' / ' + nodes.length;
 
     updateSpine();
